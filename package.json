@@ -1,0 +1,12 @@
+{
+  "name": "mili-admin",
+  "version": "1.0.0",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-telegram-bot-api": "^0.64.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  }
+}
