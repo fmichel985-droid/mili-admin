@@ -12,8 +12,8 @@ const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 const users = {}; 
 
 // Приём данных
-app.post('/register', (req, res) => {
-  const { userId, country, city, device } = req.body;
+app.get('/api/register', (req, res) => {
+  const { userId, country, city, device } = req.query;
   if (!userId) return res.status(400).json({ error: 'no id' });
 
   const isNew = !users[userId];
@@ -41,16 +41,6 @@ app.post('/register', (req, res) => {
     users[userId].lastSeen = new Date().toLocaleString('ru-RU');
   }
   res.json({ ok: true, blocked: users[userId].blocked });
-});
-
-// Офлайн
-app.post('/offline', (req, res) => {
-  const { userId } = req.body;
-  if (users[userId]) {
-    users[userId].online = false;
-    users[userId].lastSeen = new Date().toLocaleString('ru-RU');
-  }
-  res.json({ ok: true });
 });
 
 // Проверка блокировки
