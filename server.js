@@ -9,10 +9,9 @@ const MY_TELEGRAM_ID = process.env.MY_TELEGRAM_ID;
 
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
-// Хранилище пользователей в памяти (пропадёт при перезапуске — норм для старта)
-const users = {}; // { userId: { id, country, city, device, firstSeen, lastSeen, online, blocked } }
+const users = {}; 
 
-// ---------- ПРИЁМ ДАННЫХ ИЗ ИГРЫ ----------
+// Приём данных
 app.post('/register', (req, res) => {
   const { userId, country, city, device } = req.body;
   if (!userId) return res.status(400).json({ error: 'no id' });
@@ -29,7 +28,6 @@ app.post('/register', (req, res) => {
       online: true,
       blocked: false
     };
-    // Уведомление тебе
     bot.sendMessage(MY_TELEGRAM_ID, 
       `🟢 Новый пользователь!\n\n` +
       `🆔 ID: ${userId}\n` +
@@ -37,7 +35,7 @@ app.post('/register', (req, res) => {
       `🏙 Город: ${users[userId].city}\n` +
       `📱 Устройство: ${users[userId].device}\n` +
       `📅 Первый заход: ${users[userId].firstSeen}`
-    );
+    ).catch(e => console.log(e));
   } else {
     users[userId].online = true;
     users[userId].lastSeen = new Date().toLocaleString('ru-RU');
@@ -45,6 +43,7 @@ app.post('/register', (req, res) => {
   res.json({ ok: true, blocked: users[userId].blocked });
 });
 
+// Офлайн
 app.post('/offline', (req, res) => {
   const { userId } = req.body;
   if (users[userId]) {
@@ -54,18 +53,16 @@ app.post('/offline', (req, res) => {
   res.json({ ok: true });
 });
 
+// Проверка блокировки
 app.get('/check/:userId', (req, res) => {
   const u = users[req.params.userId];
   res.json({ blocked: u ? u.blocked : false });
 });
 
-// ---------- КОМАНДЫ БОТА ----------
+// Команды
 bot.onText(/\/start/, (msg) => {
-  if (String(msg.from.id) !== MY_TELEGRAM_ID) {
-    bot.sendMessage(msg.chat.id, '⛔ Доступ только для администратора.');
-    return;
-  }
-  bot.sendMessage(msg.chat.id, '👋 Привет, админ!\n\n/list — список пользователей\n/stats — статистика');
+  if (String(msg.from.id) !== MY_TELEGRAM_ID) return;
+  bot.sendMessage(msg.chat.id, '👋 Привет, админ!\n\n/list — список пользователей');
 });
 
 bot.onText(/\/list/, (msg) => {
@@ -90,7 +87,7 @@ bot.onText(/\/list/, (msg) => {
           ]]
         }
       }
-    );
+    ).catch(e => console.log(e));
   });
 });
 
@@ -98,8 +95,7 @@ bot.on('callback_query', (query) => {
   if (String(query.from.id) !== MY_TELEGRAM_ID) return;
   const data = query.data;
   const [action, userId] = data.split('_');
-
-  if (!users[userId]) return bot.answerCallbackQuery(query.id, { text: 'Пользователь не найден' });
+  if (!users[userId]) return bot.answerCallbackQuery(query.id, { text: 'Не найден' });
 
   if (action === 'ban') {
     users[userId].blocked = true;
@@ -107,14 +103,14 @@ bot.on('callback_query', (query) => {
     bot.editMessageReplyMarkup(
       { inline_keyboard: [[{ text: '✅ Разблокировать', callback_data: 'unban_' + userId }]] },
       { chat_id: query.message.chat.id, message_id: query.message.message_id }
-    );
+    ).catch(e => console.log(e));
   } else if (action === 'unban') {
     users[userId].blocked = false;
     bot.answerCallbackQuery(query.id, { text: 'Разблокирован' });
     bot.editMessageReplyMarkup(
       { inline_keyboard: [[{ text: '🚫 Заблокировать', callback_data: 'ban_' + userId }]] },
       { chat_id: query.message.chat.id, message_id: query.message.message_id }
-    );
+    ).catch(e => console.log(e));
   }
 });
 
